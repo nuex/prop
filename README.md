@@ -31,10 +31,13 @@ Code scaffolding for Erlang
       [{rebar, true}, {relx, true}, {makefile, true}].
 
     % Make a task
-    task(Options) ->
+    generate(Options) ->
+      OutputDirectory = attr(output_directory, Options),
+      Name = attr(name, Options),
+      TargetDirectory = filename:join([OutputDirectory, Name]),
+      dir(TargetDirectory),
+      chdir(TargetDirectory),
       dir("src"),
       dir("ebin"),
-      maybe_template(rebar, "rebar.config", Options),
-      maybe_template(relx, "relx.config", Options),
-      maybe_template(makefile, "Makefile", Options),
+      template("rebar.config", Options),
       template("README.md", Options).
