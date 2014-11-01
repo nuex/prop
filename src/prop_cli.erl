@@ -20,7 +20,9 @@ command(new, [Name | Args]) ->
   [ResourceName | OptionalArgs] = Args,
   AvailableOptions = Generator:command_line_options(),
   {ok, {Options, _Extra}} = getopt:parse(AvailableOptions, OptionalArgs),
-  Generator:generate([{name, ResourceName} | Options]);
+  ExtraOptions = [{name, ResourceName}, {invocation, command_line},
+                  {module, Generator}],
+  Generator:generate(lists:append([ExtraOptions, Options]));
 command(Unknown, _Args) ->
   io:format("unknown command ~p~n", [Unknown]).
 
