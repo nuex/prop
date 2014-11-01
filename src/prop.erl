@@ -1,5 +1,6 @@
 -module(prop).
--export([generate/2, attr/2, chdir/1, dir/1, template/3, template/4]).
+-export([generate/2, attr/2, chdir/1, dir/1, template/3, template/4,
+         find_generator/1]).
 -export([behaviour_info/1]).
 
 behaviour_info(callbacks) -> [{generate, 1}];
@@ -9,32 +10,12 @@ generate(Generator, Options) ->
   Mod = find_generator(Generator),
   Mod:generate(Options).
 
-%% Load modules related to prop
-ensure_generators_loaded() ->
-  [ensure_loaded(F) || P <- code:get_path(),
-                       F <- filelib:wildcard(P ++ "/prop_*.beam")].
-
-ensure_loaded(File) ->
-  Path = erlang:list_to_atom(filename:rootname(filename:basename(File))),
-  code:ensure_loaded(Path).
-
 find_generator(Generator) ->
   ensure_generators_loaded(),
   Modules = [Mod || {Mod, _Path} <- code:all_loaded(),
                                     is_prop_module(Mod),
                                     is_generator(Mod, Generator)],
   erlang:hd(Modules).
-
-is_generator(Mod, Generator) ->
-  Value = proplists:get_value(prop, Mod:module_info(attributes)),
-  case Value of
-    undefined -> false;
-    Value -> (erlang:hd(Value) == Generator)
-  end.
-
-is_prop_module(Module) ->
-  Name = erlang:atom_to_list(Module),
-  (re:run(Name, "^prop_") /= nomatch).
 
 %% ===================================================================
 %% Behaviour Functions
@@ -78,14 +59,39 @@ binary_keys(Context) ->
 ensure_directory(true, _Directory) -> ok;
 ensure_directory(false, Directory) -> file:make_dir(Directory).
 
+generator_name_to_path(Name) when erlang:is_atom(Name) ->
+  erlang:atom_to_list(Name);
+generator_name_to_path(Name) when erlang:is_tuple(Name) ->
+  filename:join(erlang:tuple_to_list(Name)).
+
 generator_path(Mod) ->
-  ModuleAttributes = Mod:module_info(attributes),
-  [Generator | _Rest] = proplists:get_value(prop, ModuleAttributes),
   ModuleDirectory = filename:dirname(code:which(Mod)),
+  ModuleAttributes = Mod:module_info(attributes),
+  [Name | _Rest] = proplists:get_value(prop, ModuleAttributes),
   filename:join([ModuleDirectory, "..", "priv", "generators",
-                 erlang:atom_to_list(Generator)]).
+                 generator_name_to_path(Name)]).
 
 read_template(Mod, RelativeTemplatePath) ->
   Path = filename:join([generator_path(Mod), "templates", 
                         lists:concat([RelativeTemplatePath, ".mustache"])]),
   file:read_file(Path).
+
+%% Load modules related to prop
+ensure_generators_loaded() ->
+  [ensure_loaded(F) || P <- code:get_path(),
+                       F <- filelib:wildcard(P ++ "/prop_*.beam")].
+
+ensure_loaded(File) ->
+  Path = erlang:list_to_atom(filename:rootname(filename:basename(File))),
+  code:ensure_loaded(Path).
+
+is_generator(Mod, Generator) ->
+  GeneratorName = proplists:get_value(prop, Mod:module_info(attributes)),
+  has_prop_attribute(Generator, GeneratorName).
+
+has_prop_attribute(_Generator, undefined) -> false;
+has_prop_attribute(Generator, Value) -> (erlang:hd(Value) == Generator).
+
+is_prop_module(Module) ->
+  Name = erlang:atom_to_list(Module),
+  (re:run(Name, "^prop_") /= nomatch).

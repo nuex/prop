@@ -1,10 +1,10 @@
--module(prop_otp).
--export([generate/1]).
+-module(prop_otp_release).
+-export([generate/1, command_line_options/0]).
 -behaviour(prop).
--prop(otp).
+-prop({otp, release}).
 
 %% ===================================================================
-%% API
+%% CALLBACKS
 %% ===================================================================
 
 %% Generate an OTP release skeleton
@@ -20,3 +20,12 @@ generate(Options) ->
   ok = prop:dir("ebin"),
   ok = prop:template(?MODULE, "README.md", Options),
   ok = prop:template(?MODULE, "ebin/app.app", "ebin/{{name}}.app", Options).
+
+%% Return command line option spec
+command_line_options() ->
+  [{description, $d, "description", {string, "Default description"},
+                 "Description of the OTP application"}].
+
+%% ===================================================================
+%% API
+%% ===================================================================
