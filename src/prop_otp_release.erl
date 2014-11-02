@@ -4,22 +4,16 @@
 -prop({otp, release}).
 
 %% ===================================================================
-%% CALLBACKS
+%% API FUNCTIONS
 %% ===================================================================
 
 %% Generate an OTP release skeleton
 generate(Prop) ->
-  {ok, OutputDirectory} = file:get_cwd(),
   Name = prop:attr(Prop, name),
-  _TargetDirectory = filename:join([OutputDirectory, Name]),
   ok = prop:dir(Prop, Name, []),
   ok = prop:chdir(Name),
-  ok = prop:dir(Prop, "config", [announce]),
   ok = prop:dir(Prop, "apps", [announce]),
-  ok = prop:dir(Prop, "priv", [announce]),
-  ok = prop:dir(Prop, "ebin", [announce]),
-  ok = prop:template(Prop, "README.md", [announce]),
-  ok = prop:template(Prop, "ebin/app.app", "ebin/{{name}}.app", [announce]).
+  ok = prop:template(Prop, "README.md", [announce]).
 
 %% Return command line option spec
 command_line_options() ->
