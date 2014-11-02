@@ -1,6 +1,6 @@
 -module(prop).
 -export([generate/2, attr/2, chdir/1, dir/3, template/3, template/4,
-         find_generator/1]).
+         exec/3, find_generator/1]).
 -export([behaviour_info/1]).
 
 behaviour_info(callbacks) -> [{generate, 1}];
@@ -33,6 +33,15 @@ dir(Prop, Directory, Options) ->
   Announcing = lists:member(announce, Options),
   maybe_announce(Announcing, Invocation, {"create ~p~n", [Directory]}),
   ensure_directory(filelib:is_dir(Directory), Directory).
+
+%% Run a command
+exec(Prop, Command, Options) ->
+  Invocation = proplists:get_value(invocation, Prop),
+  Announcing = lists:member(announce, Options),
+  maybe_announce(Announcing, Invocation, {"  exec ~p~n", [Command]}),
+  Result = os:cmd(Command),
+  io:format(Result, []),
+  ok.
 
 %% Render a template
 template(Prop, OutputPath, Options) ->
