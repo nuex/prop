@@ -20,6 +20,8 @@ generate(Prop) ->
   ok = prop:dir(Prop, "apps", [announce]),
   ok = prop:generate({e2, app}, [{name, Name ++ "_core"},
                                  {invocation, command_line}]),
+  ok = prop:exec(Prop, "rebar get-deps", [announce]),
+  ok = prop:exec(Prop, "rebar compile", [announce]),
   ok.
 
 %% Return command line option spec
