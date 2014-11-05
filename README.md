@@ -5,8 +5,11 @@ Code scaffolding for Erlang
 
 ## Usage:
 
-    prop:generate(otp, [{name, "my_erlang_app"},
-                        {path, "/home/user/my_erlang_app"}]).
+    prop:generate({otp, release}, [{name, "my_erlang_app"}]).
+
+Or via the command line:
+
+    prop new otp:release my_erlang_app
 
 ## Building a Generator:
 
@@ -14,30 +17,21 @@ Code scaffolding for Erlang
     % ERL_LIBS path.
     -module(prop_otp).
 
+    % Give it the prop behavior:
+    -behaviour(prop).
+
     % Make sure the module has the `prop` module attribute
-    -prop(otp).
-
-    % You can also make sub generators by specifying a tuple with the name of
-    % the parent as the first element
-    % -prop({otp, gen_server}).
-
-    % Give the module generator functions
-    -behaviour(prop_generator).
-
-    % Expose option defaults and requirements
-    % Defaults can be overriden by specifying a /etc/prop, ~/.prop, or
-    % .prop file
-    options() ->
-      [{rebar, true}, {relx, true}, {makefile, true}].
+    -prop({otp, release}).
 
     % Make a task
-    generate(Options) ->
-      OutputDirectory = attr(output_directory, Options),
+    generate(Prop) ->
       Name = attr(name, Options),
-      TargetDirectory = filename:join([OutputDirectory, Name]),
-      dir(TargetDirectory),
-      chdir(TargetDirectory),
-      dir("src"),
-      dir("ebin"),
-      template("rebar.config", Options),
-      template("README.md", Options).
+      prop:dir(Prop, Name, []),
+      prop:chdir(TargetDirectory),
+      prop:dir(Prop, "src", [announce]),
+      prop:dir(Prop, "ebin", [announce]),
+      prop:template(Prop, "rebar.config", [announce]),
+      prop:template(Prop, "README.md", [announce]),
+      prop:exec(Prop, "rebar get-deps"),
+      prop:exec(Prop, "rebar compile").
+
