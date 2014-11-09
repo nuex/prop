@@ -31,14 +31,14 @@ chdir(Directory) -> file:set_cwd(Directory).
 dir(Prop, Directory, Options) ->
   Invocation = proplists:get_value(invocation, Prop),
   Announcing = lists:member(announce, Options),
-  maybe_announce(Announcing, Invocation, {"create ~p~n", [Directory]}),
+  announce(Announcing, Invocation, {"create ~p~n", [Directory]}),
   ensure_directory(filelib:is_dir(Directory), Directory).
 
 %% Run a command
 exec(Prop, Command, Options) ->
   Invocation = proplists:get_value(invocation, Prop),
   Announcing = lists:member(announce, Options),
-  maybe_announce(Announcing, Invocation, {"  exec ~p~n", [Command]}),
+  announce(Announcing, Invocation, {"  exec ~p~n", [Command]}),
   Result = os:cmd(Command),
   io:format(Result, []),
   ok.
@@ -48,7 +48,7 @@ template(Prop, OutputPath, Options) ->
   Mod = proplists:get_value(module, Prop),
   Invocation = proplists:get_value(invocation, Prop),
   Announcing = lists:member(announce, Options),
-  maybe_announce(Announcing, Invocation, {"create ~p~n", [OutputPath]}),
+  announce(Announcing, Invocation, {"create ~p~n", [OutputPath]}),
   {ok, Raw} = read_template(Mod, OutputPath),
   {ok, Template} = elk:compile(Raw),
   Rendered = elk:render(Template, {proplist, binary_keys(Prop)}),
@@ -62,7 +62,7 @@ template(Prop, TemplatePath, RawOutputPath, Options) ->
   {ok, PathTemplate} = elk:compile(erlang:list_to_binary(RawOutputPath)),
   RenderedPath = elk:render(PathTemplate, {proplist, binary_keys(Prop)}),
   RenderedPathForAnnounce = erlang:binary_to_list(RenderedPath),
-  maybe_announce(Announcing, Invocation,
+  announce(Announcing, Invocation,
                  {"create ~p~n", [RenderedPathForAnnounce]}),
   {ok, RawFileTemplate} = read_template(Mod, TemplatePath),
   {ok, FileTemplate} = elk:compile(RawFileTemplate),
@@ -119,6 +119,8 @@ is_prop_module(Module) ->
   Name = erlang:atom_to_list(Module),
   (re:run(Name, "^prop_") /= nomatch).
 
-maybe_announce(true, command_line, {Message, Options}) ->
+announce(true, command_line, {Message, Values}) ->
+  prop_cli:announce(Message, Values);
   io:format(Message, Options);
-maybe_announce(_Announcing, _Invocation, _MessageAndOptions) -> ok. 
+announce(true, _Invocation, _Options) -> ok;
+announce(false, _Invocation, _Options) -> ok.
