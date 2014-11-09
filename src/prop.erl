@@ -31,14 +31,16 @@ chdir(Directory) -> file:set_cwd(Directory).
 dir(Prop, Directory, Options) ->
   Invocation = proplists:get_value(invocation, Prop),
   Announcing = lists:member(announce, Options),
-  announce(Announcing, Invocation, {"create ~p~n", [Directory]}),
+  CliMessage = "  " ++ color(success) ++ "create" ++ color_reset() ++ " ~s~n",
+  announce(Announcing, Invocation, {CliMessage, [Directory]}),
   ensure_directory(filelib:is_dir(Directory), Directory).
 
 %% Run a command
 exec(Prop, Command, Options) ->
   Invocation = proplists:get_value(invocation, Prop),
   Announcing = lists:member(announce, Options),
-  announce(Announcing, Invocation, {"  exec ~p~n", [Command]}),
+  CliMessage = "  " ++ color(success) ++ "  exec" ++ color_reset() ++ " ~s~n",
+  announce(Announcing, Invocation, {CliMessage, [Command]}),
   Result = os:cmd(Command),
   io:format(Result, []),
   ok.
@@ -48,7 +50,8 @@ template(Prop, OutputPath, Options) ->
   Mod = proplists:get_value(module, Prop),
   Invocation = proplists:get_value(invocation, Prop),
   Announcing = lists:member(announce, Options),
-  announce(Announcing, Invocation, {"create ~p~n", [OutputPath]}),
+  CliMessage = "  " ++ color(success) ++ "create" ++ color_reset() ++ " ~s~n",
+  announce(Announcing, Invocation, {CliMessage, [OutputPath]}),
   {ok, Raw} = read_template(Mod, OutputPath),
   {ok, Template} = elk:compile(Raw),
   Rendered = elk:render(Template, {proplist, binary_keys(Prop)}),
@@ -62,8 +65,8 @@ template(Prop, TemplatePath, RawOutputPath, Options) ->
   {ok, PathTemplate} = elk:compile(erlang:list_to_binary(RawOutputPath)),
   RenderedPath = elk:render(PathTemplate, {proplist, binary_keys(Prop)}),
   RenderedPathForAnnounce = erlang:binary_to_list(RenderedPath),
-  announce(Announcing, Invocation,
-                 {"create ~p~n", [RenderedPathForAnnounce]}),
+  CliMessage = "  " ++ color(success) ++ "create" ++ color_reset() ++ " ~s~n",
+  announce(Announcing, Invocation, {CliMessage, [RenderedPathForAnnounce]}),
   {ok, RawFileTemplate} = read_template(Mod, TemplatePath),
   {ok, FileTemplate} = elk:compile(RawFileTemplate),
   Rendered = elk:render(FileTemplate, {proplist, binary_keys(Prop)}),
@@ -77,6 +80,15 @@ template(Prop, TemplatePath, RawOutputPath, Options) ->
 binary_keys(Context) ->
   [{erlang:list_to_binary(erlang:atom_to_list(Key)), Value} ||
       {Key, Value} <- Context].
+
+%% Return the color for the given type
+color(success) -> color_foreground(green).
+
+%% Return the color code for the given color
+color_foreground(green) -> "\e[32m".
+
+%% Return a color reset code
+color_reset() -> "\e[0m".
 
 %% Make a directory if it doesn't exist
 ensure_directory(true, _Directory) -> ok;
@@ -119,8 +131,7 @@ is_prop_module(Module) ->
   Name = erlang:atom_to_list(Module),
   (re:run(Name, "^prop_") /= nomatch).
 
-announce(true, command_line, {Message, Values}) ->
-  prop_cli:announce(Message, Values);
+announce(true, command_line, {Message, Options}) ->
   io:format(Message, Options);
 announce(true, _Invocation, _Options) -> ok;
 announce(false, _Invocation, _Options) -> ok.
