@@ -1,11 +1,19 @@
 -module(prop_otp_app).
--export([generate/1, command_line_options/0]).
+-export([generate/1, command_line_options/0, description/0]).
 -behaviour(prop).
 -prop({otp, app}).
 
 %% ===================================================================
 %% API FUNCTIONS
 %% ===================================================================
+
+%% Return command line option spec
+command_line_options() ->
+  [{description, $d, "description", {string, "Default description"},
+                 "Description of the OTP library application"}].
+
+%% Return a generator description
+description() -> "Generate an OTP app.".
 
 %% Generate an OTP release skeleton
 generate(Prop) ->
@@ -29,8 +37,3 @@ generate(Prop) ->
   ok = prop:exec(Prop, "rebar get-deps", [announce]),
   ok = prop:exec(Prop, "rebar compile", [announce]),
   ok = prop:exec(Prop, "relx -c relx-dev.config", [announce]).
-
-%% Return command line option spec
-command_line_options() ->
-  [{description, $d, "description", {string, "Default description"},
-                 "Description of the OTP library application"}].

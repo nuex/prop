@@ -1,11 +1,21 @@
 -module(prop_e2_release).
--export([generate/1, command_line_options/0]).
+-export([generate/1, command_line_options/0, description/0]).
 -behaviour(prop).
 -prop({e2, release}).
 
 %% ===================================================================
 %% API FUNCTIONS
 %% ===================================================================
+
+%% Return command line option spec
+command_line_options() ->
+  [{description, $d, "description", {string, "Default description"},
+                 "Description of the OTP application"},
+   {project_version, $p, "project_version", {string, "0.0.1"},
+                     "Semantic version number for the project"}].
+
+%% Return the description of this generator
+description() -> "Generate an e2 release.".
 
 %% Generate an OTP release skeleton
 generate(Prop) ->
@@ -23,10 +33,3 @@ generate(Prop) ->
   ok = prop:exec(Prop, "rebar get-deps", [announce]),
   ok = prop:exec(Prop, "rebar compile", [announce]),
   ok.
-
-%% Return command line option spec
-command_line_options() ->
-  [{description, $d, "description", {string, "Default description"},
-                 "Description of the OTP application"},
-   {project_version, $p, "project_version", {string, "0.0.1"},
-                     "Semantic version number for the project"}].
