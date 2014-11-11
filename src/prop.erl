@@ -1,21 +1,36 @@
 -module(prop).
--export([generate/2, attr/2, chdir/1, dir/3, template/3, template/4,
-         exec/3, find_generator/1]).
+-export([attr/2, chdir/1, dir/3, exec/3, find_generator/1, generate/2,
+         generators/0, name/1, formatted_name/1, template/3, template/4]).
 -export([behaviour_info/1]).
 
-behaviour_info(callbacks) -> [{generate, 1}];
+behaviour_info(callbacks) -> [{generate, 1}, {description, 0},
+                              {command_line_options, 0}];
 behaviour_info(_) -> undefined.
+
+%% ===================================================================
+%% API Functions
+%% ===================================================================
+
+find_generator(Generator) ->
+  Found = [Mod || Mod <- generators(), Mod == Generator],
+  erlang:hd(Found).
 
 generate(Generator, Options) ->
   Mod = find_generator(Generator),
   Mod:generate(Options).
 
-find_generator(Generator) ->
+generators() ->
   ensure_generators_loaded(),
-  Modules = [Mod || {Mod, _Path} <- code:all_loaded(),
-                                    is_prop_module(Mod),
-                                    is_generator(Mod, Generator)],
-  erlang:hd(Modules).
+  [Mod || {Mod, _Path} <- code:all_loaded(), is_prop_generator(Mod)].
+
+name(Generator) ->
+  ModuleAttributes = Generator:module_info(attributes),
+  erlang:hd(proplists:get_value(prop, ModuleAttributes)).
+
+formatted_name(Generator) ->
+  NameParts = erlang:tuple_to_list(name(Generator)),
+  StringifiedParts = [erlang:atom_to_list(NamePart) || NamePart <- NameParts],
+  string:join(StringifiedParts, ":").
 
 %% ===================================================================
 %% Behaviour Functions
@@ -99,11 +114,10 @@ generator_name_to_path(Name) when erlang:is_atom(Name) ->
 generator_name_to_path(Name) when erlang:is_tuple(Name) ->
   filename:join(erlang:tuple_to_list(Name)).
 
-generator_path(Mod) ->
-  ModuleDirectory = filename:dirname(code:which(Mod)),
-  ModuleAttributes = Mod:module_info(attributes),
-  [Name | _Rest] = proplists:get_value(prop, ModuleAttributes),
-  filename:join([ModuleDirectory, "..", "priv", "generators",
+generator_path(Generator) ->
+  Name = prop:name(Generator),
+  GeneratoruleDirectory = filename:dirname(code:which(Generator)),
+  filename:join([GeneratoruleDirectory, "..", "priv", "generators",
                  generator_name_to_path(Name)]).
 
 read_template(Mod, RelativeTemplatePath) ->
@@ -120,16 +134,15 @@ ensure_loaded(File) ->
   Path = erlang:list_to_atom(filename:rootname(filename:basename(File))),
   code:ensure_loaded(Path).
 
-is_generator(Mod, Generator) ->
-  GeneratorName = proplists:get_value(prop, Mod:module_info(attributes)),
-  has_prop_attribute(Generator, GeneratorName).
+is_generator(Mod) ->
+  Attributes = Mod:module_info(attributes),
+  lists:member(prop, proplists:get_keys(Attributes)).
 
-has_prop_attribute(_Generator, undefined) -> false;
-has_prop_attribute(Generator, Value) -> (erlang:hd(Value) == Generator).
+is_prop_generator(Mod) -> is_prop_module(Mod) and is_generator(Mod).
 
 is_prop_module(Module) ->
   Name = erlang:atom_to_list(Module),
-  (re:run(Name, "^prop_") /= nomatch).
+  re:run(Name, "^prop_") /= nomatch.
 
 announce(true, command_line, {Message, Options}) ->
   io:format(Message, Options);
