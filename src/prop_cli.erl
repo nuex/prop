@@ -30,7 +30,12 @@ command(new, [Name | Args]) ->
   Generator:generate(lists:append([ExtraOptions, Options]));
 %% list command: List installed generators
 command(list, []) ->
-  [info_line(Generator) || Generator <- lists:sort(prop:generators())];
+  Sorted = lists:sort(prop:generators()),
+  Formatted = [name_and_description(Generator) || Generator <- Sorted],
+  Lengths = [erlang:length(Name) || {Name, _Generator} <- Formatted],
+  Widest = lists:max(Lengths),
+  Padded = [pad(Pair, Widest) || Pair <- Formatted],
+  [info_line(Line) || Line <- Padded];
 %% no input: Show usage
 command(Unknown, _Args) ->
   io:format("unknown command ~p~n", [Unknown]).
@@ -41,6 +46,11 @@ formatted_name(Generator) ->
   StringifiedParts = [erlang:atom_to_list(NamePart) || NamePart <- NameParts],
   string:join(StringifiedParts, ":").
 
+%% Generate N blank spaces
+gen_padding(Length) -> gen_padding(Length, "").
+gen_padding(0, Acc) -> Acc;
+gen_padding(Length, Acc) -> gen_padding(Length - 1, Acc ++ " ").
+
 %% Get the tuple version of the generator's name
 generator_name(NameArg) when erlang:length(NameArg) == 1 ->
   erlang:list_to_atom(erlang:head(NameArg));
@@ -49,9 +59,18 @@ generator_name(NameArgs) ->
   erlang:list_to_tuple(AtomizedNames).
 
 %% Display a description for a generator for the list command
-info_line(Generator) ->
-  PrettyName = formatted_name(Generator),
-  io:format("prop new ~s - ~s~n", [PrettyName, Generator:description()]).
+info_line(Line) -> io:format("prop new ~s~n", [Line]).
+
+%% Return a tuple with the formatted name and description of the given
+%% generator
+name_and_description(Generator) ->
+  {formatted_name(Generator), Generator:description()}.
+
+%% Add padding to make output tidy
+pad({Name, Description}, Widest) ->
+  ExtraSpace = 5,
+  Length = (Widest - erlang:length(Name)) + ExtraSpace,
+  string:join([Name, " - " ++ Description], gen_padding(Length)).
 
 %% TODO(nuex): add usage info
 usage() ->
