@@ -1,6 +1,6 @@
 -module(prop).
 -export([attr/2, chdir/1, dir/3, exec/3, find_generator/1, generate/2,
-         generators/0, name/1, formatted_name/1, template/3, template/4]).
+         generators/0, name/1, template/3, template/4]).
 -export([behaviour_info/1]).
 
 behaviour_info(callbacks) -> [{generate, 1}, {description, 0},
@@ -26,11 +26,6 @@ generators() ->
 name(Generator) ->
   ModuleAttributes = Generator:module_info(attributes),
   erlang:hd(proplists:get_value(prop, ModuleAttributes)).
-
-formatted_name(Generator) ->
-  NameParts = erlang:tuple_to_list(name(Generator)),
-  StringifiedParts = [erlang:atom_to_list(NamePart) || NamePart <- NameParts],
-  string:join(StringifiedParts, ":").
 
 %% ===================================================================
 %% Behaviour Functions
@@ -115,7 +110,7 @@ generator_name_to_path(Name) when erlang:is_tuple(Name) ->
   filename:join(erlang:tuple_to_list(Name)).
 
 generator_path(Generator) ->
-  Name = prop:name(Generator),
+  Name = name(Generator),
   GeneratoruleDirectory = filename:dirname(code:which(Generator)),
   filename:join([GeneratoruleDirectory, "..", "priv", "generators",
                  generator_name_to_path(Name)]).
