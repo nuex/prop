@@ -28,9 +28,15 @@ command(new, [Name | Args]) ->
   Generator:generate(lists:append([ExtraOptions, Options]));
 %% List installed generators
 command(list, []) ->
-  [info_line(Generator) || Generator <- prop:generators()];
+  [info_line(Generator) || Generator <- lists:sort(prop:generators())];
 command(Unknown, _Args) ->
   io:format("unknown command ~p~n", [Unknown]).
+
+%% Convert the generator name to a string
+formatted_name(Generator) ->
+  NameParts = erlang:tuple_to_list(prop:name(Generator)),
+  StringifiedParts = [erlang:atom_to_list(NamePart) || NamePart <- NameParts],
+  string:join(StringifiedParts, ":").
 
 generator_name(NameArg) when erlang:length(NameArg) == 1 ->
   erlang:list_to_atom(erlang:head(NameArg));
@@ -40,7 +46,7 @@ generator_name(NameArgs) ->
 
 %% Display a description for a generator for the list command
 info_line(Generator) ->
-  PrettyName = prop:formatted_name(Generator),
+  PrettyName = formatted_name(Generator),
   io:format("prop new ~s - ~s~n", [PrettyName, Generator:description()]).
 
 %% TODO(nuex): add usage info
