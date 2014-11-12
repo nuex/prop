@@ -5,6 +5,7 @@
 %% API FUNCTIONS
 %% ===================================================================
 
+%% Command line input entry point!
 main([]) -> usage();
 main(Args) ->
   [Command | Rest] = Args,
@@ -14,9 +15,10 @@ main(Args) ->
 %% PRIVATE FUNCTIONS
 %% ===================================================================
 
+%% Convert string to an atom
 atomize(String) -> erlang:list_to_atom(String).
 
-%% Generate something
+%% new command: Generate something
 command(new, [Name | Args]) ->
   GeneratorName = generator_name(re:split(Name, ":")),
   Generator = prop:find_generator(GeneratorName),
@@ -26,9 +28,10 @@ command(new, [Name | Args]) ->
   ExtraOptions = [{name, ResourceName}, {invocation, command_line},
                   {module, Generator}],
   Generator:generate(lists:append([ExtraOptions, Options]));
-%% List installed generators
+%% list command: List installed generators
 command(list, []) ->
   [info_line(Generator) || Generator <- lists:sort(prop:generators())];
+%% no input: Show usage
 command(Unknown, _Args) ->
   io:format("unknown command ~p~n", [Unknown]).
 
@@ -38,6 +41,7 @@ formatted_name(Generator) ->
   StringifiedParts = [erlang:atom_to_list(NamePart) || NamePart <- NameParts],
   string:join(StringifiedParts, ":").
 
+%% Get the tuple version of the generator's name
 generator_name(NameArg) when erlang:length(NameArg) == 1 ->
   erlang:list_to_atom(erlang:head(NameArg));
 generator_name(NameArgs) ->
