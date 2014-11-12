@@ -11,7 +11,7 @@ command_line_options() ->
   [{description, $d, "description", {string, "Default description"},
                  "Description of the OTP application"}].
 
-description() -> "Generate an e2 application".
+description() -> "Generate an e2 application.".
 
 generate(Prop) ->
   Name = prop:attr(Prop, name),

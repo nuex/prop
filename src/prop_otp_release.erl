@@ -13,7 +13,7 @@ command_line_options() ->
                  "Description of the OTP application"}].
 
 %% Return a description
-description() -> "Generate an OTP release".
+description() -> "Generate an OTP release.".
 
 %% Generate an OTP release skeleton
 generate(Prop) ->
