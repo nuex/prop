@@ -46,11 +46,6 @@ formatted_name(Generator) ->
   StringifiedParts = [erlang:atom_to_list(NamePart) || NamePart <- NameParts],
   string:join(StringifiedParts, ":").
 
-%% Generate N blank spaces
-gen_padding(Length) -> gen_padding(Length, "").
-gen_padding(0, Acc) -> Acc;
-gen_padding(Length, Acc) -> gen_padding(Length - 1, Acc ++ " ").
-
 %% Get the tuple version of the generator's name
 generator_name(NameArg) when erlang:length(NameArg) == 1 ->
   erlang:list_to_atom(erlang:head(NameArg));
@@ -70,7 +65,7 @@ name_and_description(Generator) ->
 pad({Name, Description}, Widest) ->
   ExtraSpace = 5,
   Length = (Widest - erlang:length(Name)) + ExtraSpace,
-  string:join([Name, " - " ++ Description], gen_padding(Length)).
+  string:join([Name, " - " ++ Description], string:copies(" ", Length)).
 
 %% TODO(nuex): add usage info
 usage() ->
