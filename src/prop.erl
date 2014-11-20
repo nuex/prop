@@ -12,7 +12,7 @@ behaviour_info(_) -> undefined.
 %% ===================================================================
 
 find_generator(Generator) ->
-  Found = [Mod || Mod <- generators(), Mod == Generator],
+  Found = [Mod || Mod <- generators(), name(Mod) == Generator],
   erlang:hd(Found).
 
 generate(Generator, Options) ->
