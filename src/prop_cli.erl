@@ -29,7 +29,7 @@ command(new, [Name | Args]) ->
                   {module, Generator}],
   Generator:generate(lists:append([ExtraOptions, Options]));
 %% list command: List installed generators
-command(list, []) ->
+command(list, _Args) ->
   Sorted = lists:sort(prop:generators()),
   Formatted = [name_and_description(Generator) || Generator <- Sorted],
   Lengths = [erlang:length(Name) || {Name, _Generator} <- Formatted],
