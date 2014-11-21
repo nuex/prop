@@ -53,7 +53,7 @@ formatted_name(Name) when is_tuple(Name) ->
 
 %% Get the tuple version of the generator's name
 generator_name(NameArg) when erlang:length(NameArg) == 1 ->
-  erlang:list_to_atom(erlang:head(NameArg));
+  erlang:list_to_atom(erlang:hd(NameArg));
 generator_name(NameArgs) ->
   AtomizedNames = [erlang:binary_to_atom(X, utf8) || X <- NameArgs],
   erlang:list_to_tuple(AtomizedNames).
