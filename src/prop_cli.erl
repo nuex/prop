@@ -30,12 +30,12 @@ command(new, [Name | Args]) ->
   Generator:generate(lists:append([ExtraOptions, Options]));
 %% list command: List installed generators
 command(list, _Args) ->
-  Sorted = lists:sort(prop:generators()),
-  Formatted = [name_and_description(Generator) || Generator <- Sorted],
-  Lengths = [erlang:length(Name) || {Name, _Generator} <- Formatted],
-  case Lengths of
+  case prop:generators() of
     [] -> io:format("No generators were found.~n", []);
-    Lengths ->
+    Generators ->
+      Sorted = lists:sort(Generators),
+      Formatted = [name_and_description(Generator) || Generator <- Sorted],
+      Lengths = [erlang:length(Name) || {Name, _Generator} <- Formatted],
       Widest = lists:max(Lengths),
       Padded = [pad(Pair, Widest) || Pair <- Formatted],
       [info_line(Line) || Line <- Padded]
