@@ -126,8 +126,8 @@ ensure_loaded(File) ->
   code:ensure_loaded(Path).
 
 is_generator(Mod) ->
-  Attributes = Mod:module_info(attributes),
-  lists:member(prop, proplists:get_keys(Attributes)).
+  Exports = Mod:module_info(exports),
+  lists:member(name, proplists:get_keys(Exports)).
 
 is_prop_generator(Mod) -> is_prop_module(Mod) and is_generator(Mod).
 
