@@ -33,9 +33,13 @@ command(list, []) ->
   Sorted = lists:sort(prop:generators()),
   Formatted = [name_and_description(Generator) || Generator <- Sorted],
   Lengths = [erlang:length(Name) || {Name, _Generator} <- Formatted],
-  Widest = lists:max(Lengths),
-  Padded = [pad(Pair, Widest) || Pair <- Formatted],
-  [info_line(Line) || Line <- Padded];
+  case Lengths of
+    [] -> io:format("No generators were found.~n", []);
+    Lengths ->
+      Widest = lists:max(Lengths),
+      Padded = [pad(Pair, Widest) || Pair <- Formatted],
+      [info_line(Line) || Line <- Padded]
+  end;
 %% no input: Show usage
 command(Unknown, _Args) ->
   io:format("unknown command ~p~n", [Unknown]).
