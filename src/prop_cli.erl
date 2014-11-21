@@ -45,8 +45,9 @@ command(Unknown, _Args) ->
   io:format("unknown command ~p~n", [Unknown]).
 
 %% Convert the generator name to a string
-formatted_name(Generator) ->
-  NameParts = erlang:tuple_to_list(Generator:name()),
+formatted_name(Name) when is_atom(Name) -> erlang:atom_to_list(Name);
+formatted_name(Name) when is_tuple(Name) ->
+  NameParts = erlang:tuple_to_list(Name),
   StringifiedParts = [erlang:atom_to_list(NamePart) || NamePart <- NameParts],
   string:join(StringifiedParts, ":").
 
@@ -63,7 +64,7 @@ info_line(Line) -> io:format("prop new ~s~n", [Line]).
 %% Return a tuple with the formatted name and description of the given
 %% generator
 name_and_description(Generator) ->
-  {formatted_name(Generator), Generator:description()}.
+  {formatted_name(Generator:name()), Generator:description()}.
 
 %% Add padding to make output tidy
 pad({Name, Description}, Widest) ->
