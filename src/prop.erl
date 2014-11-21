@@ -1,18 +1,18 @@
 -module(prop).
 -export([attr/2, chdir/1, dir/3, exec/3, find_generator/1, generate/2,
-         generators/0, name/1, template/3, template/4]).
--export([behaviour_info/1]).
+         generators/0, template/3, template/4]).
 
-behaviour_info(callbacks) -> [{generate, 1}, {description, 0},
-                              {command_line_options, 0}];
-behaviour_info(_) -> undefined.
+-callback generate(list()) -> any().
+-callback name() -> atom().
+-callback description() -> string().
+-callback options() -> list().
 
 %% ===================================================================
 %% API Functions
 %% ===================================================================
 
 find_generator(Generator) ->
-  Found = [Mod || Mod <- generators(), name(Mod) == Generator],
+  Found = [Mod || Mod <- generators(), Mod:name() == Generator],
   erlang:hd(Found).
 
 generate(Generator, Options) ->
@@ -22,10 +22,6 @@ generate(Generator, Options) ->
 generators() ->
   ensure_generators_loaded(),
   [Mod || {Mod, _Path} <- code:all_loaded(), is_prop_generator(Mod)].
-
-name(Generator) ->
-  ModuleAttributes = Generator:module_info(attributes),
-  erlang:hd(proplists:get_value(prop, ModuleAttributes)).
 
 %% ===================================================================
 %% Behaviour Functions
@@ -40,7 +36,7 @@ chdir(Directory) -> file:set_cwd(Directory).
 %% Ensure a directory exists
 dir(Prop, Directory, Options) ->
   Invocation = proplists:get_value(invocation, Prop),
-  Announcing = lists:member(announce, Options),
+  Announcing = proplists:get_value(announce, Options),
   CliMessage = "  " ++ color(success) ++ "create" ++ color_reset() ++ " ~s~n",
   announce(Announcing, Invocation, {CliMessage, [Directory]}),
   ensure_directory(filelib:is_dir(Directory), Directory).
@@ -110,7 +106,7 @@ generator_name_to_path(Name) when erlang:is_tuple(Name) ->
   filename:join(erlang:tuple_to_list(Name)).
 
 generator_path(Generator) ->
-  Name = name(Generator),
+  Name = Generator:name(),
   GeneratoruleDirectory = filename:dirname(code:which(Generator)),
   filename:join([GeneratoruleDirectory, "..", "priv", "generators",
                  generator_name_to_path(Name)]).
