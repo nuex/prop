@@ -23,7 +23,7 @@ command(new, [Name | Args]) ->
   GeneratorName = generator_name(re:split(Name, ":")),
   Generator = prop:find_generator(GeneratorName),
   [ResourceName | OptionalArgs] = Args,
-  AvailableOptions = Generator:command_line_options(),
+  AvailableOptions = Generator:options(),
   {ok, {Options, _Extra}} = getopt:parse(AvailableOptions, OptionalArgs),
   ExtraOptions = [{name, ResourceName}, {invocation, command_line},
                   {module, Generator}],
@@ -42,7 +42,7 @@ command(Unknown, _Args) ->
 
 %% Convert the generator name to a string
 formatted_name(Generator) ->
-  NameParts = erlang:tuple_to_list(prop:name(Generator)),
+  NameParts = erlang:tuple_to_list(Generator:name()),
   StringifiedParts = [erlang:atom_to_list(NamePart) || NamePart <- NameParts],
   string:join(StringifiedParts, ":").
 
