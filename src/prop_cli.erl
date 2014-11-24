@@ -2,7 +2,7 @@
 -export([main/1]).
 
 %% ===================================================================
-%% API FUNCTIONS
+%% API Functions
 %% ===================================================================
 
 %% Command line input entry point!
@@ -12,22 +12,22 @@ main(Args) ->
   command(atomize(Command), Rest).
 
 %% ===================================================================
-%% PRIVATE FUNCTIONS
+%% Private Functions
 %% ===================================================================
 
 %% Convert string to an atom
 atomize(String) -> erlang:list_to_atom(String).
 
 %% new command: Generate something
-command(new, [Name | Args]) ->
-  GeneratorName = generator_name(re:split(Name, ":")),
-  Generator = prop:find_generator(GeneratorName),
-  [ResourceName | OptionalArgs] = Args,
-  AvailableOptions = Generator:options(),
-  {ok, {Options, _Extra}} = getopt:parse(AvailableOptions, OptionalArgs),
-  ExtraOptions = [{name, ResourceName}, {invocation, command_line},
-                  {module, Generator}],
-  Generator:generate(lists:append([ExtraOptions, Options]));
+command(new, [RawName | Args]) ->
+  Name = generator_name(re:split(RawName, ":")),
+  [Resource | OptionArguments] = Args,
+  Prop = prop:generator(Name, Resource),
+  AvailableOptions = prop:options(Prop),
+  {ok, {Options, _Extra}} = getopt:parse(AvailableOptions, OptionArguments),
+  prop:generate(
+    prop:set_options( 
+      prop:set_invoked_via(Prop, command_line), Options));
 %% list command: List installed generators
 command(list, _Args) ->
   case prop:generators() of

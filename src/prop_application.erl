@@ -7,18 +7,15 @@
 
 name() -> application.
 description() -> "Generate an application.".
-options() -> [description_option()].
+options() -> [release_option(), description_option()].
 
 generate(Prop) ->
-  Name = prop:attr(Prop, name),
-  prop:destination(Prop, ["apps", Name]),
-  prop:template(Prop, "README.md"),
-  prop:template(Prop, "LICENSE"),
-  prop:template(Prop, "app.erl", ["src", "{{name}}_app.erl"]),
-  prop:template(Prop, "mod.erl", ["src", "{{name}}.erl"]),
-  prop:template(Prop, "sup.erl", ["src", "{{name}}_sup.erl"]),
-  prop:template(Prop, "app.app", ["ebin", "{{name}}.app"]),
-  prop:template(Prop, "rebar.config").
+  Name = prop:name(Prop),
+  case proplists:lookup(release, prop:options(Prop)) /= undefined of
+    true -> generate_release_app(Prop, Name);
+    % Generate a  Erlang library project
+    false -> todo
+  end.
 
 %% ===================================================================
 %% Private Functions
@@ -27,3 +24,17 @@ generate(Prop) ->
 description_option() ->
   {description, $d, "description", {string, "Default description"},
    "Description of the OTP application"}.
+
+release_option() ->
+  {release, $r, "release", boolean, ""}.
+
+generate_release_app(Prop, Name) ->
+  Root = case prop:root_directory(Prop) of
+    undefined -> filename:join(["apps", Name]);
+    RootDirectory -> filename:join([RootDirectory, "apps", Name])
+  end,
+  prop:template(Prop, "app.erl", [Root, "src", "{{name}}_app.erl"]),
+  prop:template(Prop, "mod.erl", [Root, "src", "{{name}}.erl"]),
+  prop:template(Prop, "sup.erl", [Root, "src", "{{name}}_sup.erl"]),
+  prop:template(Prop, "app.app", [Root, "ebin", "{{name}}.app"]),
+  prop:template(Prop, "rebar.config", [Root, "rebar.config"]).

@@ -5,33 +5,49 @@ Code scaffolding for Erlang
 
 ## Usage:
 
-    prop:generate({otp, release}, [{name, "my_erlang_app"}]).
+    Prop = prop:generator(release, "my_erlang_app"),
+    prop:generate(Prop).
 
 Or via the command line:
 
-    prop new otp:release my_erlang_app
+    prop new release my_erlang_app
 
 ## Building a Generator:
 
     % Create a generator module named with a `prop_` prefix and add it to your
     % ERL_LIBS path.
-    -module(prop_otp).
+    -module(prop_release).
+    -export([name/0, description/0, options/0, generate/1]).
 
     % Give it the prop behavior:
     -behaviour(prop).
 
-    % Make sure the module has the `prop` module attribute
-    -prop({otp, release}).
+    % Give it a name
+    name() -> release.
 
-    % Make a task
-    generate(Prop) ->
-      Name = attr(name, Options),
-      prop:dir(Prop, Name, []),
-      prop:chdir(TargetDirectory),
-      prop:dir(Prop, "src", [announce]),
-      prop:dir(Prop, "ebin", [announce]),
-      prop:template(Prop, "rebar.config", [announce]),
-      prop:template(Prop, "README.md", [announce]),
-      prop:exec(Prop, "rebar get-deps"),
-      prop:exec(Prop, "rebar compile").
+    % A description
+    description() -> "Generate an OTP release".
 
+    % And make it handle getopt style options on the command line
+    % (See Option Spec at https://github.com/jcomellas/getopt)
+    options() -> [description_option()].
+
+    description_option() ->
+      {description, $d, "description", {string, "Default description"},
+       "Description of the OTP application"}.
+
+    % Set up the generate task
+    generate(Release) ->
+      Name = prop:name(Release),
+      prop:template(Release, "README.md", [Name, "README.md"]),
+      App = prop:generator(application, Name ++ "_core"),
+      % Configure the app to start in the releases root directory
+      prop:generate(configure(Prop, App)).
+
+    configure(Prop, App) ->
+      Options = [{release, true}],
+      InvokedVia = prop:invoked_via(Prop),
+      Name = prop:name(Prop),
+      prop:set_root_directory(
+        prop:set_options(
+          prop:set_invoked_via(App, InvokedVia), Options), Name).
