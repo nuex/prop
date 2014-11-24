@@ -1,90 +1,89 @@
 -module(prop).
--export([attr/2, chdir/1, dir/3, exec/3, find_generator/1, generate/2,
-         generators/0, name/1, template/3, template/4]).
--export([behaviour_info/1]).
+-export([exec/3, generate/1, generator/2, generators/0, invoked_via/1, name/1,
+         options/1, root_directory/1, set_invoked_via/2, set_options/2,
+         set_root_directory/2, template/3, template/4]).
 
-behaviour_info(callbacks) -> [{generate, 1}, {description, 0},
-                              {command_line_options, 0}];
-behaviour_info(_) -> undefined.
+-callback generate(list()) -> any().
+-callback name() -> atom().
+-callback description() -> string().
+-callback options() -> list().
+
+-record(prop, {generator, name, module, invoked_via, options, root_directory}).
 
 %% ===================================================================
 %% API Functions
 %% ===================================================================
 
-find_generator(Generator) ->
-  Found = [Mod || Mod <- generators(), name(Mod) == Generator],
-  erlang:hd(Found).
+generate(#prop{module=Mod}=Prop) -> Mod:generate(Prop).
 
-generate(Generator, Options) ->
-  Mod = find_generator(Generator),
-  Mod:generate(Options).
+generator(Generator, Name) ->
+  {ok, Module} = find_generator(Generator),
+  #prop{generator=Generator, name=Name, module=Module}.
 
 generators() ->
   ensure_generators_loaded(),
   [Mod || {Mod, _Path} <- code:all_loaded(), is_prop_generator(Mod)].
 
-name(Generator) ->
-  ModuleAttributes = Generator:module_info(attributes),
-  erlang:hd(proplists:get_value(prop, ModuleAttributes)).
+invoked_via(#prop{invoked_via=InvokedVia}=_Prop) -> InvokedVia.
+
+name(#prop{name=Name}=_Prop) -> Name.
+
+options(#prop{module=Mod}=_Prop) -> Mod:options().
+
+root_directory(#prop{root_directory=Directory}=_Prop) -> Directory.
+
+set_invoked_via(Prop, Type) -> Prop#prop{invoked_via=Type}.
+
+set_options(Prop, Options) -> Prop#prop{options=Options}.
+
+set_root_directory(Prop, Directory) -> Prop#prop{root_directory=Directory}.
 
 %% ===================================================================
 %% Behaviour Functions
 %% ===================================================================
 
-%% Fetch an attribute from passed in options
-attr(Prop, Key) -> proplists:get_value(Key, Prop).
-
-%% Change directory
-chdir(Directory) -> file:set_cwd(Directory).
-
-%% Ensure a directory exists
-dir(Prop, Directory, Options) ->
-  Invocation = proplists:get_value(invocation, Prop),
-  Announcing = lists:member(announce, Options),
-  CliMessage = "  " ++ color(success) ++ "create" ++ color_reset() ++ " ~s~n",
-  announce(Announcing, Invocation, {CliMessage, [Directory]}),
-  ensure_directory(filelib:is_dir(Directory), Directory).
-
 %% Run a command
-exec(Prop, Command, Options) ->
-  Invocation = proplists:get_value(invocation, Prop),
-  Announcing = lists:member(announce, Options),
+exec(#prop{invoked_via=InvokedVia}=_Prop, Command, Options) ->
   CliMessage = "  " ++ color(success) ++ "  exec" ++ color_reset() ++ " ~s~n",
-  announce(Announcing, Invocation, {CliMessage, [Command]}),
+  Announcing = is_announcing(Options),
+  announce(Announcing, InvokedVia, {CliMessage, [Command]}),
   Result = os:cmd(Command),
   io:format(Result, []),
   ok.
 
 %% Render a template
-template(Prop, OutputPath, Options) ->
-  Mod = proplists:get_value(module, Prop),
-  Invocation = proplists:get_value(invocation, Prop),
-  Announcing = lists:member(announce, Options),
-  CliMessage = "  " ++ color(success) ++ "create" ++ color_reset() ++ " ~s~n",
-  announce(Announcing, Invocation, {CliMessage, [OutputPath]}),
-  {ok, Raw} = read_template(Mod, OutputPath),
-  {ok, Template} = elk:compile(Raw),
-  Rendered = elk:render(Template, {proplist, binary_keys(Prop)}),
-  file:write_file(OutputPath, Rendered).
+template(Prop, Template, Output) ->
+  template(Prop, Template, Output, []).
 
 %% Render a template with a different output path
-template(Prop, TemplatePath, RawOutputPath, Options) ->
-  Mod = proplists:get_value(module, Prop),
-  Invocation = proplists:get_value(invocation, Prop),
-  Announcing = lists:member(announce, Options),
-  {ok, PathTemplate} = elk:compile(erlang:list_to_binary(RawOutputPath)),
-  RenderedPath = elk:render(PathTemplate, {proplist, binary_keys(Prop)}),
+template(#prop{module=Mod, invoked_via=InvokedVia}=Prop, Template, Output,
+         Options) ->
+  % Check if OutputPath is a list that needs to be converted to a directory
+  OutputPath = case io_lib:printable_list(Output) of
+    true -> Output;
+    false -> filename:join(Output)
+  end,
+  {ok, PathTemplate} = elk:compile(erlang:list_to_binary(OutputPath)),
+  Context = binary_keys(render_context(Prop)),
+  RenderedPath = elk:render(PathTemplate, {proplist, Context}),
+  filelib:ensure_dir(erlang:binary_to_list(RenderedPath)),
   RenderedPathForAnnounce = erlang:binary_to_list(RenderedPath),
   CliMessage = "  " ++ color(success) ++ "create" ++ color_reset() ++ " ~s~n",
-  announce(Announcing, Invocation, {CliMessage, [RenderedPathForAnnounce]}),
-  {ok, RawFileTemplate} = read_template(Mod, TemplatePath),
+  Announcing = is_announcing(Options),
+  announce(Announcing, InvokedVia, {CliMessage, [RenderedPathForAnnounce]}),
+  {ok, RawFileTemplate} = read_template(Mod, Template),
   {ok, FileTemplate} = elk:compile(RawFileTemplate),
-  Rendered = elk:render(FileTemplate, {proplist, binary_keys(Prop)}),
+  Rendered = elk:render(FileTemplate, {proplist, Context}),
   file:write_file(RenderedPath, Rendered).
   
 %% ===================================================================
 %% Private Functions
 %% ===================================================================
+
+announce(true, command_line, {Message, Options}) ->
+  io:format(Message, Options);
+announce(true, _Invocation, _Options) -> ok;
+announce(false, _Invocation, _Options) -> ok.
 
 %% Make all keys binaries
 binary_keys(Context) ->
@@ -100,26 +99,6 @@ color_foreground(green) -> "\e[32m".
 %% Return a color reset code
 color_reset() -> "\e[0m".
 
-%% Make a directory if it doesn't exist
-ensure_directory(true, _Directory) -> ok;
-ensure_directory(false, Directory) -> file:make_dir(Directory).
-
-generator_name_to_path(Name) when erlang:is_atom(Name) ->
-  erlang:atom_to_list(Name);
-generator_name_to_path(Name) when erlang:is_tuple(Name) ->
-  filename:join(erlang:tuple_to_list(Name)).
-
-generator_path(Generator) ->
-  Name = name(Generator),
-  GeneratoruleDirectory = filename:dirname(code:which(Generator)),
-  filename:join([GeneratoruleDirectory, "..", "priv", "generators",
-                 generator_name_to_path(Name)]).
-
-read_template(Mod, RelativeTemplatePath) ->
-  Path = filename:join([generator_path(Mod), "templates", 
-                        lists:concat([RelativeTemplatePath, ".mustache"])]),
-  file:read_file(Path).
-
 %% Load modules related to prop
 ensure_generators_loaded() ->
   [ensure_loaded(F) || P <- code:get_path(),
@@ -129,9 +108,31 @@ ensure_loaded(File) ->
   Path = erlang:list_to_atom(filename:rootname(filename:basename(File))),
   code:ensure_loaded(Path).
 
+find_generator(Generator) ->
+  case [Mod || Mod <- generators(), Mod:name() == Generator] of
+    [] -> {error, not_found};
+    Found -> {ok, erlang:hd(Found)}
+  end.
+
+generator_name_to_path(Name) when erlang:is_atom(Name) ->
+  erlang:atom_to_list(Name);
+generator_name_to_path(Name) when erlang:is_tuple(Name) ->
+  filename:join(erlang:tuple_to_list(Name)).
+
+generator_path(Generator) ->
+  Name = Generator:name(),
+  GeneratoruleDirectory = filename:dirname(code:which(Generator)),
+  filename:join([GeneratoruleDirectory, "..", "priv", "generators",
+                 generator_name_to_path(Name)]).
+
+is_announcing(Options) when is_list(Options) ->
+  is_announcing(proplists:get_value(announce, Options));
+is_announcing(undefined) -> true;
+is_announcing(Boolean) -> Boolean.
+
 is_generator(Mod) ->
-  Attributes = Mod:module_info(attributes),
-  lists:member(prop, proplists:get_keys(Attributes)).
+  Exports = Mod:module_info(exports),
+  lists:member(name, proplists:get_keys(Exports)).
 
 is_prop_generator(Mod) -> is_prop_module(Mod) and is_generator(Mod).
 
@@ -139,7 +140,10 @@ is_prop_module(Module) ->
   Name = erlang:atom_to_list(Module),
   re:run(Name, "^prop_") /= nomatch.
 
-announce(true, command_line, {Message, Options}) ->
-  io:format(Message, Options);
-announce(true, _Invocation, _Options) -> ok;
-announce(false, _Invocation, _Options) -> ok.
+read_template(Mod, RelativeTemplate) ->
+  Path = filename:join([generator_path(Mod), "templates", 
+                        lists:concat([RelativeTemplate, ".mustache"])]),
+  file:read_file(Path).
+
+render_context(#prop{options=Options}=Prop) ->
+  lists:append(Options, [{name, name(Prop)}]).
