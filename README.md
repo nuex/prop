@@ -3,6 +3,11 @@ prop
 
 Code scaffolding for Erlang
 
+## NOTE
+
+prop is currently alpha, so something could break or some functionality could 
+be missing.
+
 ## Usage:
 
     Prop = prop:generator(release, "my_erlang_app"),
@@ -51,3 +56,13 @@ Or via the command line:
       prop:set_root_directory(
         prop:set_options(
           prop:set_invoked_via(App, InvokedVia), Options), Name).
+
+## Included Generators
+
+*release* and *application* are included generators. Currently, generated 
+code uses the OTP framework, but e2 is planned to be a configurable default 
+in the future.
+
+*release* creates a base releas project and generates an application.
+
+*application* creates an OTP application skeleton
