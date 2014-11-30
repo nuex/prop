@@ -3,11 +3,6 @@
          options/1, root_directory/1, set_invoked_via/2, set_options/2,
          set_root_directory/2, template/3, template/4]).
 
--callback generate(list()) -> any().
--callback name() -> atom().
--callback description() -> string().
--callback options() -> list().
-
 -record(prop, {generator, name, module, invoked_via, options, root_directory}).
 
 %% ===================================================================
@@ -37,10 +32,6 @@ set_invoked_via(Prop, Type) -> Prop#prop{invoked_via=Type}.
 set_options(Prop, Options) -> Prop#prop{options=Options}.
 
 set_root_directory(Prop, Directory) -> Prop#prop{root_directory=Directory}.
-
-%% ===================================================================
-%% Behaviour Functions
-%% ===================================================================
 
 %% Run a command
 exec(#prop{invoked_via=InvokedVia}=_Prop, Command, Options) ->
