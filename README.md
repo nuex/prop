@@ -56,6 +56,8 @@ Or via the command line:
 
 ## Included Generators
 
+| Generator   | Description                       |
+| ----------- | --------------------------------- |
 | release     | create an OTP release project     |
 | application | create an OTP application         |
 | module      | create a module                   |
