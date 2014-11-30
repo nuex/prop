@@ -1,5 +1,6 @@
 -module(prop_module).
--behavior(prop).
+
+%% Prop Callbacks
 -export([generate/1, name/0, description/0, options/0]).
 
 name() -> module.

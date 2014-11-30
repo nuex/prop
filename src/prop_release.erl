@@ -1,10 +1,7 @@
 -module(prop_release).
--behavior(prop).
--export([name/0, description/0, options/0, generate/1]).
 
-%% ===================================================================
-%% API Functions
-%% ===================================================================
+%% Prop callbacks
+-export([generate/1, name/0, description/0, options/0]).
 
 name() -> release.
 description() -> "Generate a release project".
@@ -17,9 +14,7 @@ generate(Release) ->
   % Configure the app to start in the releases root directory
   prop:generate(configure(Release, App)).
 
-%% ===================================================================
-%% Private Functions
-%% ===================================================================
+%% Private
 
 configure(Release, App) ->
   Options = [{release, true}],
