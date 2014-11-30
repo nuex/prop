@@ -1,9 +1,7 @@
 -module(prop_application).
--export([generate/1, name/0, description/0, options/0]).
 
-%% ===================================================================
-%% API Functions
-%% ===================================================================
+%% Prop Callbacks
+-export([generate/1, name/0, description/0, options/0]).
 
 name() -> application.
 description() -> "Generate an application.".
@@ -17,9 +15,7 @@ generate(Prop) ->
     false -> todo
   end.
 
-%% ===================================================================
-%% Private Functions
-%% ===================================================================
+%% Private
 
 description_option() ->
   {description, $d, "description", {string, "Default description"},
