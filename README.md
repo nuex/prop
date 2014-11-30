@@ -56,10 +56,7 @@ Or via the command line:
 
 ## Included Generators
 
-*release* and *application* are included generators. Currently, generated 
-code uses the OTP framework, but e2 is planned to be a configurable default 
-in the future.
-
-*release* creates a base releas project and generates an application.
-
-*application* creates an OTP application skeleton
+| release     | create an OTP release project     |
+| application | create an OTP application         |
+| module      | create a module                   |
+| library     | create an OTP library project     |
