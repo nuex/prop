@@ -24,9 +24,6 @@ Or via the command line:
     -module(prop_release).
     -export([name/0, description/0, options/0, generate/1]).
 
-    % Give it the prop behavior:
-    -behaviour(prop).
-
     % Give it a name
     name() -> release.
 
