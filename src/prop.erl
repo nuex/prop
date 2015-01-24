@@ -1,6 +1,6 @@
 -module(prop).
--export([exec/3, generate/1, generator/2, generators/0, invoked_via/1, name/1,
-         options/1, root_directory/1, set_invoked_via/2, set_options/2,
+-export([exec/3, generate/1, generator/2, generators/0, invoked_via/1, module/1,
+         name/1, options/1, root_directory/1, set_invoked_via/2, set_options/2,
          set_root_directory/2, template/3, template/4]).
 
 -record(prop, {generator, name, module, invoked_via, options, root_directory}).
@@ -21,9 +21,11 @@ generators() ->
 
 invoked_via(#prop{invoked_via=InvokedVia}=_Prop) -> InvokedVia.
 
+module(#prop{module=Module}=_Prop) -> Module.
+
 name(#prop{name=Name}=_Prop) -> Name.
 
-options(#prop{module=Mod}=_Prop) -> Mod:options().
+options(#prop{options=Options}=_Prop) -> Options.
 
 root_directory(#prop{root_directory=Directory}=_Prop) -> Directory.
 
