@@ -23,7 +23,8 @@ command(new, [RawName | Args]) ->
   Name = generator_name(re:split(RawName, ":")),
   [Resource | OptionArguments] = Args,
   Prop = prop:generator(Name, Resource),
-  AvailableOptions = prop:options(Prop),
+  Module = prop:module(Prop),
+  AvailableOptions = Module:options(),
   {ok, {Options, _Extra}} = getopt:parse(AvailableOptions, OptionArguments),
   prop:generate(
     prop:set_options( 
