@@ -9,13 +9,9 @@ add_code_paths() ->
   Script = filename:dirname(escript:script_name()),
   MainPath = filename:join([Script, "..", "ebin"]),
   DepsPath = filename:join([Script, "..", "deps", "*", "ebin"]),
+  LibsPath = filename:join([os:getenv("ERL_LIBS"), "*", "ebin"]),
   MainExpanded = filelib:wildcard(MainPath),
   DepsExpanded = filelib:wildcard(DepsPath),
-  Flattened = lists:append([MainExpanded, DepsExpanded]),
+  LibsExpanded = filelib:wildcard(LibsPath), 
+  Flattened = lists:append([MainExpanded, DepsExpanded, LibsExpanded]),
   code:add_pathsa(Flattened).
-  % MainPath = filename:join([os:getenv("ERL_LIBS"), "*", "ebin"]),
-  % DepsPath = filename:join([os:getenv("ERL_LIBS"), "*", "deps", "*", "ebin"]),
-  % MainExpanded = filelib:wildcard(MainPath),
-  % DepsExpanded = filelib:wildcard(DepsPath),
-  % Flattened = lists:append([MainExpanded, DepsExpanded]),
-  % code:add_pathsa(Flattened).
