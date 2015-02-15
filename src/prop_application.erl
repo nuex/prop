@@ -43,6 +43,7 @@ generate_release_app(Prop) ->
 generate_standalone_app(Prop) ->
   Name = prop:name(Prop),
   prop:template(Prop, "README.md", [Name, "README.md"]),
+  prop:template(Prop, "gitignore", [Name, ".gitignore"]),
   generate_common_templates(Prop, Name).
 
 release_option() -> {release, $r, "release", boolean, ""}.
